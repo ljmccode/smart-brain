@@ -1,0 +1,16 @@
+#modal-root {
+  position: relative;
+  z-index: 999;
+}
+
+
+.modal-close {
+  font-size: 3rem;
+  font-style: bold;
+  cursor: pointer;
+}
+
+.modal-cloes:hover {
+  color: grey;
+  cursor: pointer;
+}
