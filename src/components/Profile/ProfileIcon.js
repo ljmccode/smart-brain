@@ -20,6 +20,22 @@ class ProfileIcon extends React.Component {
     });
   };
 
+  onSignOut = async () => {
+    try {
+      await fetch('http://localhost:3000/signout', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: window.sessionStorage.getItem('token'),
+        },
+      });
+    } catch (err) {
+      console.log(err);
+    }
+    window.sessionStorage.removeItem('token');
+    this.props.onRouteChange('signout');
+  };
+
   render() {
     return (
       <div className="pa4 tc">
@@ -50,9 +66,7 @@ class ProfileIcon extends React.Component {
             <DropdownItem onClick={() => this.props.toggleModal()}>
               View Profile
             </DropdownItem>
-            <DropdownItem onClick={() => this.props.onRouteChange('signout')}>
-              Sign Out
-            </DropdownItem>
+            <DropdownItem onClick={this.onSignOut}>Sign Out</DropdownItem>
           </DropdownMenu>
         </Dropdown>
       </div>
