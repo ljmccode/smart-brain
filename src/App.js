@@ -25,8 +25,6 @@ const initialState = {
     email: '',
     entries: 0,
     joined: '',
-    pet: '',
-    age: '',
   },
 };
 
@@ -36,36 +34,25 @@ class App extends Component {
     this.state = initialState;
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     const token = window.sessionStorage.getItem('token');
-    if (token) {
-      fetch('http://localhost:3000/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token,
-        },
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data && data.id) {
-            fetch(`http://localhost:3000/profile/${data.id}`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: token,
-              },
-            })
-              .then((response) => response.json())
-              .then((user) => {
-                if (user && user.email) {
-                  this.loadUser(user);
-                  this.onRouteChange('home');
-                }
-              });
-          }
-        })
-        .catch(console.log);
+    try {
+      if (token) {
+        const response = await fetch('http://localhost:3000/signin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: token,
+          },
+        });
+        const userInfo = await response.json();
+
+        if (userInfo && userInfo.id) {
+          await this.getUserProfile(userInfo.id, token);
+        }
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -79,6 +66,25 @@ class App extends Component {
         joined: data.joined,
       },
     });
+  };
+
+  getUserProfile = async (id, token) => {
+    try {
+      const response = await fetch(`http://localhost:3000/profile/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token,
+        },
+      });
+      const user = await response.json();
+      if (user && user.email) {
+        this.loadUser(user);
+        this.onRouteChange('home');
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   calculateFaceLocation = (data) => {
@@ -109,40 +115,46 @@ class App extends Component {
     this.setState({ input: event.target.value });
   };
 
-  onButtonSubmit = () => {
+  getUserEntries = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/image', {
+        method: 'put',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: window.sessionStorage.getItem('token'),
+        },
+        body: JSON.stringify({
+          id: this.state.user.id,
+        }),
+      });
+      const count = await response.json();
+      this.setState(Object.assign(this.state.user, { entries: count }));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  onButtonSubmit = async () => {
     this.setState({ imageUrl: this.state.input });
-    fetch('http://localhost:3000/imageurl', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: window.sessionStorage.getItem('token'),
-      },
-      body: JSON.stringify({
-        input: this.state.input,
-      }),
-    })
-      .then((response) => response.json())
-      .then((response) => {
-        if (response) {
-          fetch('http://localhost:3000/image', {
-            method: 'put',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: window.sessionStorage.getItem('token'),
-            },
-            body: JSON.stringify({
-              id: this.state.user.id,
-            }),
-          })
-            .then((response) => response.json())
-            .then((count) => {
-              this.setState(Object.assign(this.state.user, { entries: count }));
-            })
-            .catch(console.log);
-        }
-        this.displayFaceBox(this.calculateFaceLocation(response));
-      })
-      .catch((err) => console.log(err));
+    try {
+      const response = await fetch('http://localhost:3000/imageurl', {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: window.sessionStorage.getItem('token'),
+        },
+        body: JSON.stringify({
+          input: this.state.input,
+        }),
+      });
+      const clarifaiData = await response.json();
+      if (clarifaiData) {
+        await this.getUserEntries();
+      }
+      this.displayFaceBox(this.calculateFaceLocation(clarifaiData));
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   onRouteChange = (route) => {
@@ -197,11 +209,16 @@ class App extends Component {
             <FaceRecognition boxes={boxes} imageUrl={imageUrl} />
           </div>
         ) : route === 'signin' ? (
-          <Signin loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
+          <Signin
+            loadUser={this.loadUser}
+            onRouteChange={this.onRouteChange}
+            getUserProfile={this.getUserProfile}
+          />
         ) : (
           <Register
             loadUser={this.loadUser}
             onRouteChange={this.onRouteChange}
+            getUserProfile={this.getUserProfile}
           />
         )}
       </div>
