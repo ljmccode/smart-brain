@@ -22,36 +22,25 @@ class Signin extends React.Component {
     window.sessionStorage.setItem('token', token);
   };
 
-  onSubmitSignIn = () => {
-    fetch('http://localhost:3000/signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: this.state.signInEmail,
-        password: this.state.signInPassword,
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data && data.success === 'true') {
-          this.saveAuthTokenInSession(data.token);
-          fetch(`http://localhost:3000/profile/${data.userId}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: data.token,
-            },
-          })
-            .then((resp) => resp.json())
-            .then((user) => {
-              if (user && user.email) {
-                this.props.loadUser(user);
-                this.props.onRouteChange('home');
-              }
-            })
-            .catch(console.log);
-        }
+  onSubmitSignIn = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: this.state.signInEmail,
+          password: this.state.signInPassword,
+        }),
       });
+      const { success, token, userId } = await response.json();
+
+      if (success === 'true') {
+        this.saveAuthTokenInSession(token);
+        return await this.props.getUserProfile(userId, token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   render() {

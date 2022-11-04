@@ -6,8 +6,6 @@ class Profile extends React.Component {
     super(props);
     this.state = {
       name: this.props.user.name,
-      age: this.props.user.age,
-      pet: this.props.user.pet,
     };
   }
 
@@ -15,27 +13,31 @@ class Profile extends React.Component {
     this.setState({ [e.target.name]: e.target.value });
   };
 
-  onProfileUpdate = (data) => {
-    fetch(`http://localhost:3000/profile/${this.props.user.id}`, {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: window.sessionStorage.getItem('token'),
-      },
-      body: JSON.stringify({ formInput: data }),
-    })
-      .then((resp) => {
-        if (resp.status === 200 || resp.status === 304) {
-          this.props.toggleModal();
-          this.props.loadUser({ ...this.props.user, ...data });
+  onProfileUpdate = async (data) => {
+    try {
+      const resp = await fetch(
+        `http://localhost:3000/profile/${this.props.user.id}`,
+        {
+          method: 'post',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: window.sessionStorage.getItem('token'),
+          },
+          body: JSON.stringify({ formInput: data }),
         }
-      })
-      .catch((err) => console.log(err));
+      );
+      if (resp.status === 200 || resp.status === 304) {
+        this.props.toggleModal();
+        this.props.loadUser({ ...this.props.user, ...data });
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   render() {
     const { user } = this.props;
-    const { name, age, pet } = this.state;
+    const { name } = this.state;
     return (
       <div className="profile-modal">
         <article className="br3 ba b--black-10 mv4 w-100 w-50-m w-25-l mw6 shadow-5 center bg-white">
@@ -51,7 +53,7 @@ class Profile extends React.Component {
               user.joined
             ).toLocaleDateString()}`}</p>
             <hr />
-            <label className="mt2 fw6" htmlFor="user-name">
+            <label className="mt2 fw6" htmlFor="name">
               Name:
             </label>
             <input
@@ -61,33 +63,13 @@ class Profile extends React.Component {
               className="pa2 ba w-100"
               placeholder={name}
             ></input>
-            <label className="mt2 fw6" htmlFor="user-age">
-              Age:
-            </label>
-            <input
-              onChange={this.onFormChange}
-              type="text"
-              name="age"
-              className="pa2 ba w-100"
-              placeholder={age}
-            ></input>
-            <label className="mt2 fw6" htmlFor="user-pet">
-              Favourite Pet:
-            </label>
-            <input
-              onChange={this.onFormChange}
-              type="text"
-              name="pet"
-              className="pa2 ba w-100"
-              placeholder={pet}
-            ></input>
             <div
               className="mt4"
               style={{ display: 'flex', justifyContent: 'space-evenly' }}
             >
               <button
                 className="b pa2 grow pointer hover-white w-40 bg-light-blue b--black-20"
-                onClick={() => this.onProfileUpdate({ name, age, pet })}
+                onClick={() => this.onProfileUpdate({ name })}
               >
                 Save
               </button>
